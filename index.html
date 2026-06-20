@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<title>OET Listening エラーログ</title>
+<!-- PWA / iPhone ホーム画面追加 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="エラーログ">
+<meta name="theme-color" content="#0d7377">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%230d7377'/%3E%3Ctext x='90' y='118' font-size='96' text-anchor='middle'%3E%F0%9F%91%82%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d7377'/%3E%3Ctext x='16' y='23' font-size='18' text-anchor='middle'%3E%F0%9F%91%82%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22OET%20Listening%20%E3%82%A8%E3%83%A9%E3%83%BC%E3%83%AD%E3%82%B0%22%2C%22short_name%22%3A%22%E3%82%A8%E3%83%A9%E3%83%BC%E3%83%AD%E3%82%B0%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f0f4f8%22%2C%22theme_color%22%3A%22%230d7377%22%2C%22start_url%22%3A%22.%22%7D">
+<style>
+  :root {
+    --bg: #f0f4f8;
+    --card-bg: #ffffff;
+    --primary: #0d7377;
+    --primary-dark: #0a5c5f;
+    --accent: #f59e0b;
+    --text: #1e293b;
+    --text-sub: #64748b;
+    --green: #16a34a;
+    --red: #dc2626;
+    --radius: 16px;
+    --shadow: 0 4px 20px rgba(13,115,119,0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) calc(76px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 16px 16px 0; }
+  header { text-align: center; margin-bottom: 14px; }
+  header h1 { font-size: 1.25rem; color: var(--primary); }
+  header p { font-size: 0.78rem; color: var(--text-sub); margin-top: 4px; }
+
+  /* ===== タブ ===== */
+  .tabbar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    display: flex; background: var(--card-bg);
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -4px 20px rgba(13,115,119,0.08);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabbar button {
+    flex: 1; border: none; background: none; cursor: pointer;
+    padding: 10px 4px 12px; font-family: inherit;
+    color: var(--text-sub); font-size: 0.7rem; line-height: 1.6;
+  }
+  .tabbar button .ico { display: block; font-size: 1.3rem; }
+  .tabbar button.active { color: var(--primary); font-weight: 700; }
+
+  .tab-page { display: none; }
+  .tab-page.active { display: block; }
+
+  /* ===== カード共通 ===== */
+  .card {
+    background: var(--card-bg); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 16px; margin-bottom: 14px;
+  }
+  .card h2 { font-size: 0.95rem; color: var(--primary-dark); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .card h2 .sub { font-size: 0.7rem; color: var(--text-sub); font-weight: 400; }
+
+  /* ===== フォーム ===== */
+  label.fld { display: block; font-size: 0.74rem; color: var(--text-sub); margin: 10px 0 4px; font-weight: 600; }
+  input[type=text], input[type=date], textarea, select {
+    width: 100%; padding: 11px 12px; border: 1px solid #cbd5e1;
+    border-radius: 12px; font-size: 1rem; font-family: inherit;
+    color: var(--text); background: #fff;
+  }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--primary); }
+  textarea { resize: vertical; min-height: 48px; }
+  .row2 { display: flex; gap: 8px; }
+  .row2 > div { flex: 1; }
+  .cat-pick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .cat-pick button {
+    border: 1.5px solid #cbd5e1; background: #fff; border-radius: 999px;
+    padding: 9px 13px; font-size: 0.82rem; font-family: inherit; cursor: pointer; color: var(--text);
+  }
+  .cat-pick button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .form-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .btn {
+    border: 1px solid #cbd5e1; background: var(--card-bg); border-radius: 12px;
+    padding: 12px 16px; font-size: 0.92rem; font-family: inherit; cursor: pointer; color: var(--text);
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; flex: 1; }
+  .btn-ghost { color: var(--text-sub); }
+  .btn-sm { padding: 7px 12px; font-size: 0.8rem; border-radius: 999px; }
+  .pill { padding: 7px 12px; font-size: 0.8rem; border-radius: 999px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; color: var(--text); font-family: inherit; }
+  .pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  /* ===== フィルタ ===== */
+  .filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+
+  /* ===== 一覧 ===== */
+  .entry-list { list-style: none; }
+  .entry {
+    position: relative; overflow: hidden; border-radius: 12px; margin-bottom: 8px;
+    background: var(--red);
+  }
+  .entry-inner {
+    position: relative; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 11px 13px; transition: transform 0.2s ease; touch-action: pan-y;
+  }
+  .entry-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .entry-cat { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #e0f2f1; color: var(--primary-dark); white-space: nowrap; }
+  .entry-meta { font-size: 0.68rem; color: var(--text-sub); margin-left: auto; white-space: nowrap; }
+  .entry-words { font-size: 0.95rem; line-height: 1.5; }
+  .entry-words .correct { color: var(--green); font-weight: 700; }
+  .entry-words .answer { color: var(--red); text-decoration: line-through; }
+  .entry-words .arrow { color: var(--text-sub); margin: 0 5px; }
+  .entry-note { font-size: 0.76rem; color: var(--text-sub); margin-top: 3px; line-height: 1.5; }
+  .entry-del {
+    position: absolute; right: 0; top: 0; bottom: 0; width: 80px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 0.85rem; font-weight: 700;
+  }
+  .empty { text-align: center; color: var(--text-sub); font-size: 0.85rem; padding: 24px 8px; line-height: 1.7; }
+
+  /* ===== グラフ ===== */
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+  .bar-label { width: 92px; font-size: 0.8rem; flex-shrink: 0; }
+  .bar-track { flex: 1; background: #eef2f6; border-radius: 999px; height: 22px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--primary); border-radius: 999px; min-width: 2px; transition: width 0.4s; }
+  .bar-num { width: 30px; text-align: right; font-size: 0.82rem; font-weight: 700; color: var(--primary-dark); flex-shrink: 0; }
+
+  /* ===== 重点ウォッチ ===== */
+  .watch-item { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px dashed #e2e8f0; }
+  .watch-item:last-child { border-bottom: none; }
+  .watch-word { font-weight: 700; font-size: 0.95rem; }
+  .watch-cat { font-size: 0.68rem; padding: 1px 7px; border-radius: 999px; background: #e0f2f1; color: var(--primary-dark); }
+  .watch-count { margin-left: auto; font-size: 0.78rem; color: var(--red); font-weight: 700; white-space: nowrap; }
+
+  /* ===== 週次 ===== */
+  .week-block { border: 1px solid #e2e8f0; border-radius: 12px; padding: 11px 13px; margin-bottom: 8px; }
+  .week-head { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; margin-bottom: 6px; }
+  .week-head .wname { font-weight: 700; }
+  .week-counts { font-size: 0.8rem; color: var(--text-sub); line-height: 1.8; }
+  .week-focus { font-size: 0.82rem; margin-top: 6px; color: var(--accent); font-weight: 700; }
+
+  /* ===== 同期 ===== */
+  .sync-area textarea { min-height: 140px; font-size: 0.82rem; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+  .hint { font-size: 0.74rem; color: var(--text-sub); line-height: 1.6; margin-top: 6px; }
+  .btnrow { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .btnrow .btn { flex: 1; min-width: 120px; }
+
+  /* ===== トースト ===== */
+  #toast {
+    position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
+    background: var(--text); color: #fff; padding: 11px 20px; border-radius: 999px;
+    font-size: 0.85rem; opacity: 0; pointer-events: none; transition: all 0.25s; z-index: 100; max-width: 90%;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>👂 OET Listening エラーログ</h1>
+    <p>Part A の精度UP — 落とした語をその場で記録</p>
+  </header>
+
+  <!-- ============ 記録タブ ============ -->
+  <section class="tab-page active" id="page-log">
+    <div class="card">
+      <h2 id="formTitle">➕ エラーを追加</h2>
+      <div class="row2">
+        <div>
+          <label class="fld">日付</label>
+          <input type="date" id="f-date">
+        </div>
+        <div>
+          <label class="fld">素材 (L1/O3 等)</label>
+          <input type="text" id="f-source" placeholder="L1" autocapitalize="characters">
+        </div>
+      </div>
+      <label class="fld">音声で言っていた語/句</label>
+      <input type="text" id="f-heard" placeholder="haemorrhage" autocapitalize="none">
+      <div class="row2">
+        <div>
+          <label class="fld">自分の解答</label>
+          <input type="text" id="f-answer" placeholder="hemorrage" autocapitalize="none">
+        </div>
+        <div>
+          <label class="fld">正解</label>
+          <input type="text" id="f-correct" placeholder="haemorrhage" autocapitalize="none">
+        </div>
+      </div>
+      <label class="fld">区分</label>
+      <div class="cat-pick" id="catPick"></div>
+      <label class="fld">ひとことメモ</label>
+      <textarea id="f-note" placeholder="英式綴り。ae と末尾 -age"></textarea>
+      <div class="form-actions">
+        <button class="btn btn-ghost" id="cancelEditBtn" style="display:none">キャンセル</button>
+        <button class="btn btn-primary" id="saveBtn">保存する</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📋 記録一覧 <span class="sub" id="listCount"></span></h2>
+      <div class="filters" id="catFilters"></div>
+      <div class="filters">
+        <input type="text" id="searchBox" placeholder="🔎 フリーワード検索" style="flex:1; padding:9px 12px; font-size:0.85rem;">
+      </div>
+      <div class="filters">
+        <input type="date" id="dateFilter" style="flex:1; padding:9px 12px; font-size:0.85rem;">
+        <button class="pill" id="clearDateBtn">日付クリア</button>
+      </div>
+      <ul class="entry-list" id="entryList"></ul>
+    </div>
+  </section>
+
+  <!-- ============ 分析タブ ============ -->
+  <section class="tab-page" id="page-stats">
+    <div class="card">
+      <h2>📊 区分別の件数</h2>
+      <div class="filters" style="margin-bottom:14px;">
+        <button class="pill active" data-period="week" id="periodWeek">今週</button>
+        <button class="pill" data-period="all" id="periodAll">全期間</button>
+      </div>
+      <div id="barChart"></div>
+    </div>
+
+    <div class="card">
+      <h2>🔥 重点ウォッチ <span class="sub">2回以上 落とした語</span></h2>
+      <div id="watchList"></div>
+    </div>
+
+    <div class="card">
+      <h2>🗓 週次サマリー <span class="sub">日曜起点 · 次週の重点</span></h2>
+      <div id="weeklyList"></div>
+    </div>
+  </section>
+
+  <!-- ============ 同期タブ ============ -->
+  <section class="tab-page" id="page-sync">
+    <div class="card sync-area">
+      <h2>📥 Markdown インポート</h2>
+      <p class="hint">Obsidian エラーログの「日次記録」の表（<code>### YYYY-MM-DD</code> 見出し＋表）を貼り付けて取り込みます。重複行は自動スキップ。</p>
+      <textarea id="importBox" placeholder="### 2026-06-21 （素材: L1）&#10;| # | 音声で言っていた語/句 | 自分の解答 | 正解 | 区分 | ひとことメモ |&#10;|---|---|---|---|---|---|&#10;| 1 | haemorrhage | hemorrage | haemorrhage | 🔤綴り | 英式綴り |"></textarea>
+      <div class="btnrow">
+        <button class="btn btn-primary" id="importBtn">取り込む</button>
+      </div>
+    </div>
+
+    <div class="card sync-area">
+      <h2>📤 Markdown エクスポート</h2>
+      <p class="hint">Obsidian と同じ表フォーマットで出力します。コピーして Obsidian の「日次記録」に貼り戻してください。</p>
+      <textarea id="exportBox" readonly></textarea>
+      <div class="btnrow">
+        <button class="btn" id="refreshExportBtn">↻ 再生成</button>
+        <button class="btn btn-primary" id="copyMdBtn">📋 コピー</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>💾 バックアップ / 復元 <span class="sub">JSON · データ消失対策</span></h2>
+      <div class="btnrow">
+        <button class="btn" id="exportJsonBtn">⬇️ JSON書き出し</button>
+        <button class="btn" id="importJsonBtn">⬆️ JSON読み込み</button>
+      </div>
+      <input type="file" id="jsonFile" accept="application/json,.json" style="display:none">
+      <div class="btnrow">
+        <button class="btn btn-ghost" id="wipeBtn" style="flex:1; color:var(--red); border-color:#fecaca;">⚠️ 全データ削除</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ タブバー ============ -->
+<nav class="tabbar">
+  <button class="active" data-tab="log"><span class="ico">📝</span>記録</button>
+  <button data-tab="stats"><span class="ico">📊</span>分析</button>
+  <button data-tab="sync"><span class="ico">🔄</span>同期</button>
+</nav>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+/* ===== 区分定義（5種・固定） ===== */
+const CATEGORIES = [
+  { key: "spelling",   label: "綴り",          short: "綴り",     emoji: "🔤" },
+  { key: "grammar",    label: "文法形",        short: "文法形",   emoji: "🔁" },
+  { key: "sound",      label: "音",            short: "音",       emoji: "👂" },
+  { key: "speed",      label: "速さ",          short: "速さ",     emoji: "⚡" },
+  { key: "paraphrase", label: "言い換え(B/C)", short: "言い換え", emoji: "🧠" },
+];
+const catByKey = k => CATEGORIES.find(c => c.key === k) || CATEGORIES[0];
+
+/* ===== localStorage（既存アプリと同方針） ===== */
+const LS_KEY = "oet-listening-errorlog-v1";
+let entries = [];   // entry オブジェクトの配列
+
+function loadEntries() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_KEY));
+    if (Array.isArray(saved)) entries = saved;
+  } catch (e) { entries = []; }
+}
+function saveEntries() {
+  localStorage.setItem(LS_KEY, JSON.stringify(entries));
+}
+
+/* ===== 日付ユーティリティ ===== */
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+// 与えられた YYYY-MM-DD が属する週の「日曜」を YYYY-MM-DD で返す
+function weekStartOf(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  if (isNaN(d)) return dateStr;
+  d.setDate(d.getDate() - d.getDay()); // 0=日曜
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function thisWeekStart() { return weekStartOf(todayStr()); }
+function fmtShort(dateStr) {
+  const p = dateStr.split("-");
+  return p.length === 3 ? `${parseInt(p[1])}/${parseInt(p[2])}` : dateStr;
+}
+
+/* ===== UI 状態 ===== */
+let editingId = null;
+let pickedCat = "spelling";
+let filterCat = "all";       // "all" or category key
+let filterDate = "";
+let searchTerm = "";
+let statsPeriod = "week";    // "week" or "all"
+
+/* ===== トースト ===== */
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
+}
+
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/* ========================================================
+   区分ピッカー & フィルタの描画
+   ======================================================== */
+function renderCatPick() {
+  const el = document.getElementById("catPick");
+  el.innerHTML = CATEGORIES.map(c =>
+    `<button data-cat="${c.key}" class="${c.key === pickedCat ? "active" : ""}">${c.emoji} ${c.label}</button>`
+  ).join("");
+  el.querySelectorAll("button").forEach(b => {
+    b.addEventListener("click", () => {
+      pickedCat = b.dataset.cat;
+      renderCatPick();
+    });
+  });
+}
+
+function renderCatFilters() {
+  const el = document.getElementById("catFilters");
+  const counts = {};
+  CATEGORIES.forEach(c => counts[c.key] = 0);
+  entries.forEach(e => { if (counts[e.category] != null) counts[e.category]++; });
+  let html = `<button class="pill ${filterCat === "all" ? "active" : ""}" data-cf="all">すべて (${entries.length})</button>`;
+  html += CATEGORIES.map(c =>
+    `<button class="pill ${filterCat === c.key ? "active" : ""}" data-cf="${c.key}">${c.emoji} ${c.label} (${counts[c.key]})</button>`
+  ).join("");
+  el.innerHTML = html;
+  el.querySelectorAll("button").forEach(b => {
+    b.addEventListener("click", () => { filterCat = b.dataset.cf; renderList(); renderCatFilters(); });
+  });
+}
+
+/* ========================================================
+   フォーム（追加・編集）
+   ======================================================== */
+function resetForm() {
+  editingId = null;
+  pickedCat = "spelling";
+  document.getElementById("f-date").value = todayStr();
+  document.getElementById("f-source").value = "";
+  document.getElementById("f-heard").value = "";
+  document.getElementById("f-answer").value = "";
+  document.getElementById("f-correct").value = "";
+  document.getElementById("f-note").value = "";
+  document.getElementById("formTitle").textContent = "➕ エラーを追加";
+  document.getElementById("saveBtn").textContent = "保存する";
+  document.getElementById("cancelEditBtn").style.display = "none";
+  renderCatPick();
+}
+
+function startEdit(id) {
+  const e = entries.find(x => x.id === id);
+  if (!e) return;
+  editingId = id;
+  pickedCat = e.category;
+  document.getElementById("f-date").value = e.date || todayStr();
+  document.getElementById("f-source").value = e.source || "";
+  document.getElementById("f-heard").value = e.heard || "";
+  document.getElementById("f-answer").value = e.answer || "";
+  document.getElementById("f-correct").value = e.correct || "";
+  document.getElementById("f-note").value = e.note || "";
+  document.getElementById("formTitle").textContent = "✏️ エラーを編集";
+  document.getElementById("saveBtn").textContent = "更新する";
+  document.getElementById("cancelEditBtn").style.display = "block";
+  renderCatPick();
+  switchTab("log");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function saveFromForm() {
+  const date = document.getElementById("f-date").value || todayStr();
+  const source = document.getElementById("f-source").value.trim();
+  const heard = document.getElementById("f-heard").value.trim();
+  const answer = document.getElementById("f-answer").value.trim();
+  const correct = document.getElementById("f-correct").value.trim();
+  const note = document.getElementById("f-note").value.trim();
+
+  if (!heard && !correct) {
+    toast("「音声」か「正解」のどちらかは入力してください");
+    return;
+  }
+
+  if (editingId) {
+    const e = entries.find(x => x.id === editingId);
+    if (e) Object.assign(e, { date, source, heard, answer, correct, category: pickedCat, note });
+    toast("更新しました ✓");
+  } else {
+    entries.push({
+      id: (crypto.randomUUID ? crypto.randomUUID() : "id-" + Date.now() + "-" + Math.random().toString(36).slice(2)),
+      date, source, heard, answer, correct, category: pickedCat, note
+    });
+    toast("追加しました ✓");
+  }
+  saveEntries();
+  resetForm();
+  renderAll();
+}
+
+function deleteEntry(id) {
+  const e = entries.find(x => x.id === id);
+  if (!e) return;
+  if (!confirm(`このエラーを削除しますか？\n\n${e.correct || e.heard || ""}`)) return;
+  entries = entries.filter(x => x.id !== id);
+  saveEntries();
+  renderAll();
+  toast("削除しました");
+}
+
+/* ========================================================
+   一覧表示（フィルタ・検索・新しい順）
+   ======================================================== */
+function visibleEntries() {
+  let list = entries.slice();
+  if (filterCat !== "all") list = list.filter(e => e.category === filterCat);
+  if (filterDate) list = list.filter(e => e.date === filterDate);
+  if (searchTerm) {
+    const q = searchTerm.toLowerCase();
+    list = list.filter(e =>
+      [e.heard, e.answer, e.correct, e.note, e.source].some(v => (v || "").toLowerCase().includes(q))
+    );
+  }
+  // 新しい順（日付降順、同日は後から入れたものを上に）
+  list.sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return entries.indexOf(b) - entries.indexOf(a);
+  });
+  return list;
+}
+
+function renderList() {
+  const ul = document.getElementById("entryList");
+  const list = visibleEntries();
+  document.getElementById("listCount").textContent = `(${list.length}件)`;
+
+  if (list.length === 0) {
+    ul.innerHTML = `<div class="empty">${entries.length === 0
+      ? "まだ記録がありません。<br>上のフォームから最初のエラーを追加しましょう。"
+      : "条件に合う記録がありません。"}</div>`;
+    return;
+  }
+
+  ul.innerHTML = list.map(e => {
+    const c = catByKey(e.category);
+    const words = e.answer
+      ? `<span class="answer">${esc(e.answer)}</span><span class="arrow">→</span><span class="correct">${esc(e.correct || e.heard)}</span>`
+      : `<span class="correct">${esc(e.correct || e.heard)}</span>`;
+    const meta = `${fmtShort(e.date)}${e.source ? " · " + esc(e.source) : ""}`;
+    return `<li class="entry" data-id="${e.id}">
+      <div class="entry-del">削除</div>
+      <div class="entry-inner">
+        <div class="entry-top">
+          <span class="entry-cat">${c.emoji} ${c.label}</span>
+          <span class="entry-meta">${meta}</span>
+        </div>
+        <div class="entry-words">${words}</div>
+        ${e.heard && e.heard !== (e.correct || "") ? `<div class="entry-note">🔊 ${esc(e.heard)}</div>` : ""}
+        ${e.note ? `<div class="entry-note">💡 ${esc(e.note)}</div>` : ""}
+      </div>
+    </li>`;
+  }).join("");
+
+  ul.querySelectorAll(".entry").forEach(li => attachEntryHandlers(li));
+}
+
+// タップで編集、左スワイプで削除
+function attachEntryHandlers(li) {
+  const id = li.dataset.id;
+  const inner = li.querySelector(".entry-inner");
+  let startX = 0, startY = 0, curX = 0, dragging = false, moved = false;
+
+  inner.addEventListener("touchstart", (ev) => {
+    startX = ev.touches[0].clientX; startY = ev.touches[0].clientY;
+    dragging = true; moved = false;
+  }, { passive: true });
+
+  inner.addEventListener("touchmove", (ev) => {
+    if (!dragging) return;
+    const dx = ev.touches[0].clientX - startX;
+    const dy = ev.touches[0].clientY - startY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8) moved = true;
+    if (moved) {
+      curX = Math.min(0, dx);
+      curX = Math.max(curX, -90);
+      inner.style.transform = `translateX(${curX}px)`;
+    }
+  }, { passive: true });
+
+  inner.addEventListener("touchend", () => {
+    dragging = false;
+    if (curX < -55) {
+      inner.style.transform = "translateX(-80px)";
+      // 開いた状態で削除確定はタップ or 再スワイプ
+      const onTap = () => { deleteEntry(id); };
+      li.querySelector(".entry-del").onclick = onTap;
+    } else {
+      inner.style.transform = "translateX(0)";
+    }
+    curX = 0;
+  });
+
+  // クリック（PC）/ タップで編集。スワイプ中は無効。
+  inner.addEventListener("click", () => {
+    if (moved) { moved = false; return; }
+    if (inner.style.transform === "translateX(-80px)") { inner.style.transform = "translateX(0)"; return; }
+    startEdit(id);
+  });
+}
+
+/* ========================================================
+   分析: 区分別 棒グラフ（今週 / 全期間）
+   ======================================================== */
+function renderChart() {
+  const ws = thisWeekStart();
+  const pool = statsPeriod === "week" ? entries.filter(e => weekStartOf(e.date) === ws) : entries;
+  const counts = {};
+  CATEGORIES.forEach(c => counts[c.key] = 0);
+  pool.forEach(e => { if (counts[e.category] != null) counts[e.category]++; });
+  const max = Math.max(1, ...Object.values(counts));
+
+  const el = document.getElementById("barChart");
+  if (pool.length === 0) {
+    el.innerHTML = `<div class="empty">${statsPeriod === "week" ? "今週の記録はまだありません。" : "記録がありません。"}</div>`;
+    return;
+  }
+  el.innerHTML = CATEGORIES.map(c => {
+    const n = counts[c.key];
+    const pct = (n / max) * 100;
+    return `<div class="bar-row">
+      <span class="bar-label">${c.emoji} ${c.label}</span>
+      <span class="bar-track"><span class="bar-fill" style="width:${pct}%"></span></span>
+      <span class="bar-num">${n}</span>
+    </div>`;
+  }).join("") + `<div class="hint">合計 ${pool.length} 件${statsPeriod === "week" ? `（今週 ${fmtShort(ws)}〜）` : ""}</div>`;
+}
+
+/* ========================================================
+   分析: 🔥重点ウォッチ（同じ語が2回以上）
+   ======================================================== */
+function renderWatch() {
+  const map = {};   // 正規化キー -> {display, count, cats:{}}
+  entries.forEach(e => {
+    const w = (e.correct || e.heard || "").trim();
+    if (!w) return;
+    const key = w.toLowerCase();
+    if (!map[key]) map[key] = { display: w, count: 0, cats: {} };
+    map[key].count++;
+    map[key].cats[e.category] = (map[key].cats[e.category] || 0) + 1;
+  });
+  const items = Object.values(map).filter(x => x.count >= 2)
+    .sort((a, b) => b.count - a.count);
+
+  const el = document.getElementById("watchList");
+  if (items.length === 0) {
+    el.innerHTML = `<div class="empty">2回以上 落とした語はまだありません。<br>記録が溜まると自動でここに昇格します。🔥</div>`;
+    return;
+  }
+  el.innerHTML = items.map(x => {
+    const topCat = Object.keys(x.cats).sort((a, b) => x.cats[b] - x.cats[a])[0];
+    const c = catByKey(topCat);
+    return `<div class="watch-item">
+      <span class="watch-word">${esc(x.display)}</span>
+      <span class="watch-cat">${c.emoji} ${c.label}</span>
+      <span class="watch-count">×${x.count}</span>
+    </div>`;
+  }).join("");
+}
+
+/* ========================================================
+   分析: 週次サマリー（日曜起点・次週の重点）
+   ======================================================== */
+function renderWeekly() {
+  const weeks = {};   // weekStart -> counts{}
+  entries.forEach(e => {
+    const ws = weekStartOf(e.date);
+    if (!weeks[ws]) { weeks[ws] = {}; CATEGORIES.forEach(c => weeks[ws][c.key] = 0); }
+    if (weeks[ws][e.category] != null) weeks[ws][e.category]++;
+  });
+  const keys = Object.keys(weeks).sort().reverse();
+
+  const el = document.getElementById("weeklyList");
+  if (keys.length === 0) {
+    el.innerHTML = `<div class="empty">記録が溜まると週ごとの集計が出ます。</div>`;
+    return;
+  }
+  el.innerHTML = keys.map((ws, idx) => {
+    const counts = weeks[ws];
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    const max = Math.max(...Object.values(counts));
+    const topKey = max > 0 ? CATEGORIES.map(c => c.key).sort((a, b) => counts[b] - counts[a])[0] : null;
+    const topC = topKey ? catByKey(topKey) : null;
+    const countsStr = CATEGORIES.map(c => `${c.emoji}${c.label} ${counts[c.key]}`).join(" / ");
+    const wname = `${fmtShort(ws)}〜の週`;
+    const label = idx === 0 ? "今週" : (idx === 1 ? "先週" : `${idx}週前`);
+    return `<div class="week-block">
+      <div class="week-head"><span class="wname">${wname}</span><span style="color:var(--text-sub);font-size:0.74rem">${label} · 計${total}件</span></div>
+      <div class="week-counts">${countsStr}</div>
+      ${topC ? `<div class="week-focus">→ 一番多い区分: ${topC.emoji}${topC.label} ｜ ${idx === 0 ? "来週" : "次週"}はここを重点に</div>` : ""}
+    </div>`;
+  }).join("");
+}
+
+/* ========================================================
+   Markdown 相互変換
+   ======================================================== */
+// 区分セル（絵文字 or ラベル）→ key
+function categoryFromCell(s) {
+  s = (s || "").trim();
+  for (const c of CATEGORIES) if (s.includes(c.emoji)) return c.key;
+  if (s.includes("言い換え")) return "paraphrase";
+  for (const c of CATEGORIES) if (s.includes(c.label)) return c.key;
+  for (const c of CATEGORIES) if (s.toLowerCase().includes(c.key)) return c.key;
+  return "spelling";
+}
+function cleanCell(s) {
+  s = (s || "").trim();
+  if (s === "—" || s === "-" || s === "(聞き取れず)" || s === "（聞き取れず）") return s === "(聞き取れず)" || s === "（聞き取れず）" ? "" : "";
+  return s;
+}
+
+function toMarkdown(list) {
+  if (!list.length) return "";
+  const byDate = {};
+  list.forEach(e => { (byDate[e.date] = byDate[e.date] || []).push(e); });
+  const dates = Object.keys(byDate).sort().reverse();
+  const out = [];
+  dates.forEach(d => {
+    const rows = byDate[d];
+    const srcs = [...new Set(rows.map(e => e.source).filter(Boolean))].join(" / ") || "—";
+    out.push(`### ${d} （素材: ${srcs}）`);
+    out.push(`| # | 音声で言っていた語/句 | 自分の解答 | 正解 | 区分 | ひとことメモ |`);
+    out.push(`|---|---|---|---|---|---|`);
+    rows.forEach((e, i) => {
+      const c = catByKey(e.category);
+      out.push(`| ${i + 1} | ${e.heard || ""} | ${e.answer || "—"} | ${e.correct || ""} | ${c.emoji}${c.short} | ${e.note || ""} |`);
+    });
+    out.push("");
+  });
+  return out.join("\n").trim();
+}
+
+function parseMarkdown(text) {
+  const lines = text.split(/\r?\n/);
+  let curDate = todayStr(), curSrc = "";
+  const parsed = [];
+  for (const line of lines) {
+    const h = line.match(/^###\s*(\d{4}-\d{2}-\d{2})\s*(?:[（(]\s*素材[:：]?\s*(.*?)\s*[)）])?/);
+    if (h) {
+      curDate = h[1];
+      curSrc = (h[2] || "").trim();
+      if (curSrc === "—" || curSrc === "-") curSrc = "";
+      continue;
+    }
+    if (!line.trim().startsWith("|")) continue;
+    const cells = line.split("|").map(c => c.trim());
+    const cols = cells.slice(1, cells.length - 1); // 先頭末尾の空セルを除去
+    if (cols.length < 6) continue;
+    const first = cols[0];
+    if (first.includes("音声") || cols[1].includes("音声")) continue;   // ヘッダ行
+    if (/^-+$/.test(first)) continue;                                    // 区切り行
+    if (!/^\d+$/.test(first)) continue;                                  // 番号行のみ採用
+    parsed.push({
+      date: curDate,
+      source: curSrc,
+      heard: cleanCell(cols[1]),
+      answer: cleanCell(cols[2]),
+      correct: cleanCell(cols[3]),
+      category: categoryFromCell(cols[4]),
+      note: (cols[5] || "").trim(),
+    });
+  }
+  return parsed;
+}
+
+function importMarkdown() {
+  const text = document.getElementById("importBox").value;
+  const parsed = parseMarkdown(text);
+  if (!parsed.length) { toast("取り込める行が見つかりませんでした"); return; }
+
+  const sig = e => `${e.date}|${(e.heard||"").toLowerCase()}|${(e.answer||"").toLowerCase()}|${(e.correct||"").toLowerCase()}`;
+  const existing = new Set(entries.map(sig));
+  let added = 0;
+  parsed.forEach(p => {
+    if (existing.has(sig(p))) return;
+    existing.add(sig(p));
+    entries.push({
+      id: (crypto.randomUUID ? crypto.randomUUID() : "id-" + Date.now() + "-" + Math.random().toString(36).slice(2)),
+      ...p
+    });
+    added++;
+  });
+  saveEntries();
+  renderAll();
+  document.getElementById("importBox").value = "";
+  toast(`${added}件 取り込みました${parsed.length - added > 0 ? `（重複 ${parsed.length - added}件スキップ）` : ""}`);
+}
+
+function refreshExport() {
+  document.getElementById("exportBox").value = toMarkdown(entries) || "（まだデータがありません）";
+}
+
+async function copyMarkdown() {
+  const text = toMarkdown(entries);
+  if (!text) { toast("コピーするデータがありません"); return; }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast("Markdownをコピーしました 📋");
+  } catch (e) {
+    const ta = document.getElementById("exportBox");
+    ta.removeAttribute("readonly"); ta.focus(); ta.select();
+    document.execCommand("copy");
+    ta.setAttribute("readonly", "");
+    toast("コピーしました（手動選択でも可）");
+  }
+}
+
+/* ===== JSON バックアップ ===== */
+function exportJson() {
+  const blob = new Blob([JSON.stringify(entries, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `oet-listening-errorlog-${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast("JSONを書き出しました ⬇️");
+}
+function importJson(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!Array.isArray(data)) throw new Error("形式不正");
+      if (!confirm(`${data.length}件を読み込みます。現在の${entries.length}件と置き換えますか？\n（キャンセルで「追記」になります）`)) {
+        // 追記モード
+        const sig = e => `${e.date}|${(e.heard||"").toLowerCase()}|${(e.correct||"").toLowerCase()}`;
+        const ex = new Set(entries.map(sig));
+        data.forEach(d => { if (!ex.has(sig(d))) { entries.push(d); ex.add(sig(d)); } });
+      } else {
+        entries = data;
+      }
+      // id 補完
+      entries.forEach(e => { if (!e.id) e.id = "id-" + Date.now() + "-" + Math.random().toString(36).slice(2); });
+      saveEntries();
+      renderAll();
+      toast("JSONを読み込みました ⬆️");
+    } catch (e) {
+      toast("読み込みに失敗しました（JSON形式を確認）");
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ========================================================
+   タブ切り替え
+   ======================================================== */
+function switchTab(tab) {
+  document.querySelectorAll(".tab-page").forEach(p => p.classList.remove("active"));
+  document.getElementById("page-" + tab).classList.add("active");
+  document.querySelectorAll(".tabbar button").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  if (tab === "stats") { renderChart(); renderWatch(); renderWeekly(); }
+  if (tab === "sync") refreshExport();
+  window.scrollTo({ top: 0 });
+}
+
+/* ========================================================
+   全体再描画
+   ======================================================== */
+function renderAll() {
+  renderCatFilters();
+  renderList();
+  renderChart();
+  renderWatch();
+  renderWeekly();
+  refreshExport();
+}
+
+/* ========================================================
+   イベント結線 & 初期化
+   ======================================================== */
+function init() {
+  loadEntries();
+  resetForm();
+
+  document.getElementById("saveBtn").addEventListener("click", saveFromForm);
+  document.getElementById("cancelEditBtn").addEventListener("click", resetForm);
+
+  document.getElementById("searchBox").addEventListener("input", (e) => { searchTerm = e.target.value.trim(); renderList(); });
+  document.getElementById("dateFilter").addEventListener("change", (e) => { filterDate = e.target.value; renderList(); });
+  document.getElementById("clearDateBtn").addEventListener("click", () => { filterDate = ""; document.getElementById("dateFilter").value = ""; renderList(); });
+
+  document.getElementById("periodWeek").addEventListener("click", () => { statsPeriod = "week"; updatePeriodPills(); renderChart(); });
+  document.getElementById("periodAll").addEventListener("click", () => { statsPeriod = "all"; updatePeriodPills(); renderChart(); });
+
+  document.getElementById("importBtn").addEventListener("click", importMarkdown);
+  document.getElementById("refreshExportBtn").addEventListener("click", refreshExport);
+  document.getElementById("copyMdBtn").addEventListener("click", copyMarkdown);
+
+  document.getElementById("exportJsonBtn").addEventListener("click", exportJson);
+  document.getElementById("importJsonBtn").addEventListener("click", () => document.getElementById("jsonFile").click());
+  document.getElementById("jsonFile").addEventListener("change", (e) => { if (e.target.files[0]) importJson(e.target.files[0]); e.target.value = ""; });
+  document.getElementById("wipeBtn").addEventListener("click", () => {
+    if (confirm("すべての記録を削除します。元に戻せません。\n先にJSONバックアップを取りましたか？")) {
+      entries = []; saveEntries(); renderAll(); toast("全データを削除しました");
+    }
+  });
+
+  document.querySelectorAll(".tabbar button").forEach(b =>
+    b.addEventListener("click", () => switchTab(b.dataset.tab)));
+
+  renderAll();
+}
+
+function updatePeriodPills() {
+  document.getElementById("periodWeek").classList.toggle("active", statsPeriod === "week");
+  document.getElementById("periodAll").classList.toggle("active", statsPeriod === "all");
+}
+
+init();
+</script>
+</body>
+</html>
